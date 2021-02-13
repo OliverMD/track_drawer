@@ -4,6 +4,7 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
     Model {
         draw_context: DrawContext::new(1000_f64 / 4_f64, 1000_f64, 2000_f64, 4, 6),
         lines: vec![((1, 0), (3, 4))],
+        show_points: true,
     }
 }
 
@@ -40,35 +41,64 @@ impl DrawContext {
 struct Model {
     draw_context: DrawContext,
     lines: Vec<((u16, u16), (u16, u16))>,
+    show_points: bool,
 }
 
-enum Msg {}
+enum Msg {
+    ToggleShowPoints,
+}
 
-fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {}
+fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
+    match msg {
+        Msg::ToggleShowPoints => model.show_points = !model.show_points,
+    }
+}
 
 fn view(model: &Model) -> Node<Msg> {
-    log!("In view");
-
+    log!("is checked: {}", model.show_points);
     div![
-        style! {
-            St::Width => vw(100),
-            St::Height => vh(100),
-            St::Display => "flex",
-            St::JustifyContent => "center",
-            St::AlignItems => "center",
-        },
-        svg![
-            attrs! {
-                At::Width => percent(60),
-                At::Height => percent(60),
-                At::ViewBox => format!("0 0 {} {}", model.draw_context.view_width, model.draw_context.view_height),
-                At::PreserveAspectRatio => "xMidYMid meet"
+        div![
+            style! {
+                St::Display => "flex",
+                St::JustifyContent => "center",
+                St::AlignItems => "center",
+                St::FlexDirection => "column"
             },
-            gen_circles(&model.draw_context),
-            model
-                .lines
-                .iter()
-                .map(|coords| draw_line(*coords, &model.draw_context))
+            "Controls",
+            div![
+                label!["Show points"],
+                input![
+                    id!["show-points"],
+                    attrs! {
+                    At::Id => "show-points",
+                    At::Type => "checkbox",
+                    At::Checked => model.show_points.as_at_value()
+                    },
+                    ev(Ev::Click, |_| Msg::ToggleShowPoints)
+                ]
+            ]
+        ],
+        div![
+            style! {
+                St::Width => vw(100),
+                St::Height => vh(100),
+                St::Display => "flex",
+                St::JustifyContent => "center",
+                St::AlignItems => "center",
+            },
+            svg![
+                attrs! {
+                    At::Width => percent(60),
+                    At::Height => percent(60),
+                    At::ViewBox => format!("0 0 {} {}", model.draw_context.view_width, model.draw_context.view_height),
+                    At::PreserveAspectRatio => "xMidYMid meet"
+                },
+                IF!(model.show_points => gen_circles(&model.draw_context)),
+                model
+                    .lines
+                    .iter()
+                    .map(|coords| draw_line(*coords, &model.draw_context))
+            ]
         ]
     ]
 }
