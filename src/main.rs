@@ -1,3 +1,4 @@
+use rand::Rng;
 use seed::{prelude::*, *};
 
 fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
@@ -5,6 +6,9 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
         draw_context: DrawContext::new(1000_f64 / 4_f64, 1000_f64, 2000_f64, 4, 6),
         lines: vec![((1, 0), (3, 4))],
         show_points: true,
+        x_limits: (0, 4),
+        y_limits: (0, 6),
+        next_line: None,
     }
 }
 
@@ -40,17 +44,41 @@ impl DrawContext {
 
 struct Model {
     draw_context: DrawContext,
-    lines: Vec<((u16, u16), (u16, u16))>,
+    lines: Vec<((i16, i16), (i16, i16))>,
     show_points: bool,
+    x_limits: (i16, i16),
+    y_limits: (i16, i16),
+    next_line: Option<((i16, i16), (i16, i16))>,
 }
 
 enum Msg {
     ToggleShowPoints,
+    NextRandomLine,
+    AddLine,
 }
 
 fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::ToggleShowPoints => model.show_points = !model.show_points,
+        Msg::NextRandomLine => {
+            let mut rng = rand::thread_rng();
+            model.next_line = Some((
+                (
+                    rng.gen_range(model.x_limits.0..model.x_limits.1),
+                    rng.gen_range(model.y_limits.0..model.y_limits.1),
+                ),
+                (
+                    rng.gen_range(model.x_limits.0..model.x_limits.1),
+                    rng.gen_range(model.y_limits.0..model.y_limits.1),
+                ),
+            ))
+        }
+        Msg::AddLine => {
+            if let Some(line) = model.next_line {
+                model.lines.push(line);
+                model.next_line = None;
+            }
+        }
     }
 }
 
@@ -68,13 +96,18 @@ fn view(model: &Model) -> Node<Msg> {
             div![
                 label!["Show points"],
                 input![
-                    id!["show-points"],
                     attrs! {
                     At::Id => "show-points",
                     At::Type => "checkbox",
                     At::Checked => model.show_points.as_at_value()
                     },
                     ev(Ev::Click, |_| Msg::ToggleShowPoints)
+                ],
+                button!["Next", ev(Ev::Click, |_| Msg::NextRandomLine),],
+                button![
+                    "Add",
+                    attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
+                    ev(Ev::Click, |_| Msg::AddLine),
                 ]
             ]
         ],
@@ -97,14 +130,17 @@ fn view(model: &Model) -> Node<Msg> {
                 model
                     .lines
                     .iter()
-                    .map(|coords| draw_line(*coords, &model.draw_context))
+                    .map(|coords| draw_line(*coords, &model.draw_context)),
+                model
+                    .next_line
+                    .map(|line| draw_line(line, &model.draw_context))
             ]
         ]
     ]
 }
 
 fn draw_line(
-    ((from_x, from_y), (to_x, to_y)): ((u16, u16), (u16, u16)),
+    ((from_x, from_y), (to_x, to_y)): ((i16, i16), (i16, i16)),
     ctx: &DrawContext,
 ) -> Node<Msg> {
     let from_x = ctx.x_spacing * (from_x + 1) as f64;
