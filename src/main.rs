@@ -3,11 +3,11 @@ use seed::{prelude::*, *};
 
 fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
     Model {
-        draw_context: DrawContext::new(1000_f64 / 4_f64, 1000_f64, 2000_f64, 4, 6),
+        draw_context: DrawContext::new(1000_f64 / 5_f64, 1000_f64, 2000_f64, 4, 2),
         lines: vec![],
         show_points: true,
         x_limits: (0, 4),
-        y_limits: (0, 6),
+        y_limits: (0, 2),
         next_line: None,
     }
 }
@@ -55,6 +55,7 @@ enum Msg {
     ToggleShowPoints,
     NextRandomLine,
     AddLine,
+    NextRow,
 }
 
 fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
@@ -79,11 +80,14 @@ fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
                 model.next_line = None;
             }
         }
+        Msg::NextRow => {
+            model.draw_context.grid_height += 1;
+            model.y_limits = (model.y_limits.0 + 1, model.y_limits.1 + 1);
+        }
     }
 }
 
 fn view(model: &Model) -> Node<Msg> {
-    log!("is checked: {}", model.show_points);
     div![
         div![
             style! {
@@ -121,6 +125,16 @@ fn view(model: &Model) -> Node<Msg> {
                     },
                     attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
                     ev(Ev::Click, |_| Msg::AddLine),
+                ],
+                button![
+                    "Next Row",
+                    style! {
+                    St::Display => "flex",
+                    St::JustifyContent => "center",
+                    St::AlignItems => "center",
+                    },
+                    attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
+                    ev(Ev::Click, |_| Msg::NextRow),
                 ]
             ]
         ],
