@@ -1,7 +1,26 @@
+use crate::Msg::LineFrom;
 use rand::Rng;
 use seed::{prelude::*, *};
 
+const ENTER_KEY: &str = "Enter";
+
 fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
+    orders.stream(streams::window_event(Ev::KeyDown, |ev| {
+        let ev: web_sys::KeyboardEvent = ev.unchecked_into();
+        if ev.key() == ENTER_KEY {
+            Some(Msg::AddLine)
+        } else if ev.key() == "r" {
+            Some(Msg::NextRandomLine)
+        } else if ev.key() == "n" {
+            Some(Msg::NextRow)
+        } else {
+            if let Some(num) = ev.key().parse().ok() {
+                Some(LineFrom(num))
+            } else {
+                None
+            }
+        }
+    }));
     Model {
         draw_context: DrawContext::new(1000_f64 / 5_f64, 1000_f64, 2000_f64, 4, 2),
         lines: vec![],
@@ -54,15 +73,16 @@ struct Model {
 enum Msg {
     ToggleShowPoints,
     NextRandomLine,
+    LineFrom(u16),
     AddLine,
     NextRow,
 }
 
 fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
+    let mut rng = rand::thread_rng();
     match msg {
         Msg::ToggleShowPoints => model.show_points = !model.show_points,
         Msg::NextRandomLine => {
-            let mut rng = rand::thread_rng();
             model.next_line = Some((
                 (
                     rng.gen_range(model.x_limits.0..model.x_limits.1),
@@ -83,6 +103,17 @@ fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
         Msg::NextRow => {
             model.draw_context.grid_height += 1;
             model.y_limits = (model.y_limits.0 + 1, model.y_limits.1 + 1);
+        }
+        LineFrom(x) => {
+            if x <= model.draw_context.grid_width {
+                model.next_line = Some((
+                    ((x as i16) - 1, model.y_limits.0),
+                    (
+                        rng.gen_range(model.x_limits.0..model.x_limits.1),
+                        rng.gen_range(model.y_limits.0..model.y_limits.1),
+                    ),
+                ))
+            }
         }
     }
 }
