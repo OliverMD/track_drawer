@@ -118,71 +118,59 @@ fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
     }
 }
 
+fn button_class() -> Attrs {
+    C![
+        "py-2 px-4 bg-blue-500 text-white font-semibold rounded-md shadow-md hover:bg-blue-700",
+        "focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 m-2"
+    ]
+}
+
 fn view(model: &Model) -> Node<Msg> {
     div![
+        C!["h-screen flex flex-row"],
         div![
-            style! {
-                St::Display => "flex",
-                St::JustifyContent => "center",
-                St::AlignItems => "center",
-                St::FlexDirection => "column"
-            },
-            "Controls",
+            C!["w-1/4 bg-gray-100 h-full overflow-auto flex flex-col"],
             div![
-                label!["Show points"],
-                input![
-                    attrs! {
-                    At::Id => "show-points",
-                    At::Type => "checkbox",
-                    At::Checked => model.show_points.as_at_value()
-                    },
-                    ev(Ev::Click, |_| Msg::ToggleShowPoints)
-                ],
-                button![
-                    "Next",
-                    style! {
-                    St::Display => "flex",
-                    St::JustifyContent => "center",
-                    St::AlignItems => "center",
-                    },
-                    ev(Ev::Click, |_| Msg::NextRandomLine),
-                ],
-                button![
-                    "Add",
-                    style! {
-                    St::Display => "flex",
-                    St::JustifyContent => "center",
-                    St::AlignItems => "center",
-                    },
-                    attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
-                    ev(Ev::Click, |_| Msg::AddLine),
-                ],
-                button![
-                    "Next Row",
-                    style! {
-                    St::Display => "flex",
-                    St::JustifyContent => "center",
-                    St::AlignItems => "center",
-                    },
-                    attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
-                    ev(Ev::Click, |_| Msg::NextRow),
+                C!["flex justify-center p-2 m-2"],
+                label![
+                    C!["flex items-center"],
+                    "Show points",
+                    input![
+                        C!["form-checkbox ml-2"],
+                        attrs! {
+                        At::Id => "show-points",
+                        At::Type => "checkbox",
+                        At::Checked => model.show_points.as_at_value()
+                        },
+                        ev(Ev::Click, |_| Msg::ToggleShowPoints)
+                    ]
                 ]
+            ],
+            button![
+                "Next",
+                button_class(),
+                ev(Ev::Click, |_| Msg::NextRandomLine)
+            ],
+            button![
+                "Add",
+                button_class(),
+                attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
+                ev(Ev::Click, |_| Msg::AddLine),
+            ],
+            button![
+                "Next Row",
+                button_class(),
+                attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
+                ev(Ev::Click, |_| Msg::NextRow),
             ]
         ],
         div![
-            style! {
-                St::Width => vw(100),
-                St::Height => vh(100),
-                St::Display => "flex",
-                St::JustifyContent => "center",
-                St::AlignItems => "center",
-            },
+            C!["w-3/4 h-full flex justify-center"],
             svg![
+                C!["h-full block"],
                 attrs! {
-                    At::Width => percent(60),
-                    At::Height => percent(60),
                     At::ViewBox => format!("0 0 {} {}", model.draw_context.view_width, model.draw_context.view_height),
-                    At::PreserveAspectRatio => "xMidYMid meet"
+                    At::PreserveAspectRatio => "xMidYMid meet",
                 },
                 IF!(model.show_points => gen_circles(&model.draw_context)),
                 model
