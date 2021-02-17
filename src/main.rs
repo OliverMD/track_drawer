@@ -120,7 +120,7 @@ fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
 
 fn button_class() -> Attrs {
     C![
-        "py-2 px-4 bg-blue-500 text-white font-semibold rounded-md shadow-md hover:bg-blue-700",
+        "py-2 px-4 w-1/2 bg-blue-500 text-white font-semibold rounded-md shadow-md hover:bg-blue-700",
         "focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 m-2"
     ]
 }
@@ -129,7 +129,7 @@ fn view(model: &Model) -> Node<Msg> {
     div![
         C!["h-screen flex flex-row"],
         div![
-            C!["w-1/4 bg-gray-100 h-full overflow-auto flex flex-col"],
+            C!["w-1/4 bg-gray-100 h-full overflow-auto flex flex-col items-center pt-8"],
             div![
                 C!["flex justify-center p-2 m-2"],
                 label![
@@ -162,6 +162,21 @@ fn view(model: &Model) -> Node<Msg> {
                 button_class(),
                 attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
                 ev(Ev::Click, |_| Msg::NextRow),
+            ],
+            div![
+                C!["m-3 rounded-md bg-blue-100 bg-opacity-50 font-sans text-center text-gray-500"],
+                "Keyboard Shortcuts",
+                dl![
+                    C!["grid grid-cols-2 gap-2 text-sm my-3 font-light"],
+                    dt!["r"],
+                    dd!["Random line"],
+                    dt!["n"],
+                    dd!["New row"],
+                    dt!["Enter"],
+                    dd!["Adds the last random line"],
+                    dt!["0..9"],
+                    dd!["Random line from numbered point"]
+                ]
             ]
         ],
         div![
