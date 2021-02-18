@@ -160,7 +160,7 @@ fn view(model: &Model) -> Node<Msg> {
     div![
         C!["h-screen flex flex-row"],
         div![
-            C!["w-1/4 bg-gray-100 h-full overflow-auto flex flex-col items-center pt-8"],
+            C!["w-1/4 bg-gray-100 h-full overflow-auto flex flex-col items-center pt-8 divide-y-2 px-2"],
             div![
                 C!["flex justify-center p-2 m-2"],
                 label![
@@ -177,39 +177,48 @@ fn view(model: &Model) -> Node<Msg> {
                     ]
                 ]
             ],
-            button![
-                "Next",
-                button_class(),
-                ev(Ev::Click, |_| Msg::NextRandomLine)
-            ],
-            button![
-                "Add",
-                button_class(),
-                attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
-                ev(Ev::Click, |_| Msg::AddLine),
-            ],
-            button![
-                "Next Row",
-                button_class(),
-                attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
-                ev(Ev::Click, |_| Msg::NextRow),
-            ],
             div![
-                C!["m-3 rounded-md bg-blue-100 bg-opacity-50 font-sans text-center text-gray-500"],
-                "Keyboard Shortcuts",
-                dl![
-                    C!["grid grid-cols-2 gap-2 text-sm my-3 font-light"],
-                    dt!["r"],
-                    dd!["Random line"],
-                    dt!["n"],
-                    dd!["New row"],
-                    dt!["Enter"],
-                    dd!["Adds the last random line"],
-                    dt!["0..9"],
-                    dd!["Random line from numbered point"]
+                C!["items-center flex flex-col w-full py-2"],
+                button![
+                    "Next Line",
+                    button_class(),
+                    ev(Ev::Click, |_| Msg::NextRandomLine)
+                ],
+                button![
+                    "Confirm Line",
+                    button_class(),
+                    attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
+                    ev(Ev::Click, |_| Msg::AddLine),
+                ],
+                button![
+                    "Next Row",
+                    button_class(),
+                    attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
+                    ev(Ev::Click, |_| Msg::NextRow),
                 ]
             ],
-            button!["Download", button_class(), ev(Ev::Click, |_| Msg::Download)]
+            div![
+            C!["py-2"],
+                div![
+                    C!["m-3 py-2 rounded-md bg-blue-100 bg-opacity-50 font-sans text-center text-gray-500"],
+                    "Keyboard Shortcuts",
+                    dl![
+                        C!["grid grid-cols-2 gap-2 text-sm my-3 font-light"],
+                        dt!["r"],
+                        dd!["Random line"],
+                        dt!["n"],
+                        dd!["New row"],
+                        dt!["Enter"],
+                        dd!["Adds the last random line"],
+                        dt!["0..9"],
+                        dd!["Random line from numbered point"]
+                    ]
+                ]
+            ],
+            div![
+                C!["pt-2 items-center flex flex-col w-full"],
+                button!["Download", button_class(), ev(Ev::Click, |_| Msg::Download)]
+            ]
         ],
         div![
             C!["w-3/4 h-full flex justify-center"],
