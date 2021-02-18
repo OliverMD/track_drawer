@@ -1,6 +1,8 @@
 use crate::Msg::LineFrom;
+use js_sys::Array;
 use rand::Rng;
 use seed::{prelude::*, *};
+use web_sys::{Blob, BlobPropertyBag, XmlSerializer};
 
 const ENTER_KEY: &str = "Enter";
 
@@ -28,6 +30,7 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
         x_limits: (0, 4),
         y_limits: (0, 2),
         next_line: None,
+        svg_ref: ElRef::new(),
     }
 }
 
@@ -68,6 +71,8 @@ struct Model {
     x_limits: (i16, i16),
     y_limits: (i16, i16),
     next_line: Option<((i16, i16), (i16, i16))>,
+
+    svg_ref: ElRef<web_sys::HtmlElement>,
 }
 
 enum Msg {
@@ -76,6 +81,7 @@ enum Msg {
     LineFrom(u16),
     AddLine,
     NextRow,
+    Download,
 }
 
 fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
@@ -104,7 +110,7 @@ fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
             model.draw_context.grid_height += 1;
             model.y_limits = (model.y_limits.0 + 1, model.y_limits.1 + 1);
         }
-        LineFrom(x) => {
+        Msg::LineFrom(x) => {
             if x <= model.draw_context.grid_width {
                 model.next_line = Some((
                     ((x as i16) - 1, model.y_limits.0),
@@ -114,6 +120,31 @@ fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
                     ),
                 ))
             }
+        }
+        Msg::Download => {
+            let svg_buf = XmlSerializer::new()
+                .unwrap()
+                .serialize_to_string(&model.svg_ref.shared_node_ws.clone_inner().unwrap())
+                .unwrap();
+
+            let mut blob_type = BlobPropertyBag::new();
+            blob_type.type_("image/svg+xml;charset=utf-8");
+
+            let arr = Array::new_with_length(1);
+            arr.set(0, JsValue::from_str(&svg_buf));
+
+            let blob =
+                Blob::new_with_str_sequence_and_options(&JsValue::from(arr), &blob_type).unwrap();
+            let url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
+            let document = web_sys::window().unwrap().document().unwrap();
+            let elem = document.create_element("a").unwrap();
+            elem.set_attribute("href", &url).unwrap();
+            elem.set_attribute("download", "Track Image").unwrap();
+            let event = document.create_event("MouseEvents").unwrap();
+            event.init_event("click");
+            document.body().unwrap().append_with_node_1(&elem).unwrap();
+            elem.dispatch_event(&event).unwrap();
+            document.body().unwrap().remove_child(&elem).unwrap();
         }
     }
 }
@@ -177,12 +208,14 @@ fn view(model: &Model) -> Node<Msg> {
                     dt!["0..9"],
                     dd!["Random line from numbered point"]
                 ]
-            ]
+            ],
+            button!["Download", button_class(), ev(Ev::Click, |_| Msg::Download)]
         ],
         div![
             C!["w-3/4 h-full flex justify-center"],
             svg![
                 C!["h-full block"],
+                el_ref(&model.svg_ref),
                 attrs! {
                     At::ViewBox => format!("0 0 {} {}", model.draw_context.view_width, model.draw_context.view_height),
                     At::PreserveAspectRatio => "xMidYMid meet",
