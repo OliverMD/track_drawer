@@ -80,6 +80,7 @@ enum Msg {
     NextRow,
     Download,
     ChangeNumCols(u16),
+    Clear,
 }
 
 fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
@@ -148,6 +149,9 @@ fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
             model.draw_context.grid_width = x;
             model.x_limits = (0, x as i16);
         }
+        Msg::Clear => {
+            model.lines.clear();
+        }
     }
 }
 
@@ -197,12 +201,17 @@ fn view(model: &Model) -> Node<Msg> {
                     button_class(),
                     attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
                     ev(Ev::Click, |_| Msg::NextRow),
-                ]
+                ],
+                button![
+                    "Clear All",
+                    button_class(),
+                    ev(Ev::Click, |_| Msg::Clear)
+                ],
             ],
             div![
             C!["py-2"],
                 div![
-                    C!["m-3 py-2 rounded-md bg-blue-100 bg-opacity-50 font-sans text-center text-gray-500"],
+                    C!["m-3 p-2 rounded-md bg-blue-100 bg-opacity-50 font-sans text-center text-gray-500 shadow"],
                     "Keyboard Shortcuts",
                     dl![
                         C!["grid grid-cols-2 gap-2 text-sm my-3 font-light"],
