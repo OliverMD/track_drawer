@@ -2,7 +2,7 @@ use crate::Msg::LineFrom;
 use js_sys::Array;
 use rand::Rng;
 use seed::{prelude::*, *};
-use web_sys::{Blob, BlobPropertyBag, XmlSerializer};
+use web_sys::{Blob, BlobPropertyBag, HtmlInputElement, XmlSerializer};
 
 const ENTER_KEY: &str = "Enter";
 
@@ -24,7 +24,7 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
         }
     }));
     Model {
-        draw_context: DrawContext::new(1000_f64 / 5_f64, 1000_f64, 2000_f64, 4, 2),
+        draw_context: DrawContext::new(1000_f64, 2000_f64, 4, 2),
         lines: vec![],
         show_points: true,
         x_limits: (0, 4),
@@ -35,9 +35,6 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
 }
 
 struct DrawContext {
-    x_spacing: f64,
-    y_spacing: f64,
-
     grid_width: u16,
     grid_height: u16,
 
@@ -46,21 +43,21 @@ struct DrawContext {
 }
 
 impl DrawContext {
-    fn new(
-        spacing: f64,
-        width: f64,
-        height: f64,
-        grid_width: u16,
-        grid_height: u16,
-    ) -> DrawContext {
+    fn new(width: f64, height: f64, grid_width: u16, grid_height: u16) -> DrawContext {
         DrawContext {
-            x_spacing: spacing,
-            y_spacing: spacing,
             view_width: width,
             view_height: height,
             grid_width,
             grid_height,
         }
+    }
+
+    fn x_spacing(&self) -> f64 {
+        self.view_width / (self.grid_width + 1) as f64
+    }
+
+    fn y_spacing(&self) -> f64 {
+        self.view_width / (self.grid_width + 1) as f64
     }
 }
 
@@ -82,6 +79,7 @@ enum Msg {
     AddLine,
     NextRow,
     Download,
+    ChangeNumCols(u16),
 }
 
 fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
@@ -145,6 +143,10 @@ fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
             document.body().unwrap().append_with_node_1(&elem).unwrap();
             elem.dispatch_event(&event).unwrap();
             document.body().unwrap().remove_child(&elem).unwrap();
+        }
+        Msg::ChangeNumCols(x) => {
+            model.draw_context.grid_width = x;
+            model.x_limits = (0, x as i16);
         }
     }
 }
@@ -216,6 +218,35 @@ fn view(model: &Model) -> Node<Msg> {
                 ]
             ],
             div![
+                C!["p-2 w-full flex flex-col items-center my-2"],
+                label![
+                    C!["text-left mb-1 w-full"],
+                    "Grid width:"
+                ],
+                input![
+                    C!["w-full"],
+                    attrs!{
+                    At::Type => "range",
+                    At::Min => 1,
+                    At::Max => 8,
+                    At::Step => 1,
+                    At::Value => model.x_limits.1
+                    },
+                    ev(Ev::Change, |change| {
+                        let input_elem: HtmlInputElement = change.target().unwrap().dyn_into().unwrap();
+                        Msg::ChangeNumCols(input_elem.value().parse().unwrap())
+                    })
+                ],
+                div![
+                    C!["flex justify-between mt-2 text-xs text-gray-600 w-full px-1"],
+                    span![C!["text-left"], format!("{}", 1)],
+                    (2..8)
+                        .into_iter()
+                        .map(|i| span![C!["text-center left-2"], format!("{}", i)]),
+                    span![C!["text-right"], format!("{}", 8)]
+                ]
+            ],
+            div![
                 C!["pt-2 items-center flex flex-col w-full"],
                 button!["Download", button_class(), ev(Ev::Click, |_| Msg::Download)]
             ]
@@ -238,7 +269,7 @@ fn view(model: &Model) -> Node<Msg> {
                     .next_line
                     .map(|line| draw_line(line, &model.draw_context))
             ]
-        ]
+        ],
     ]
 }
 
@@ -248,10 +279,10 @@ fn draw_line(
 ) -> Vec<Node<Msg>> {
     let mut ret = Vec::new();
 
-    let from_x = ctx.x_spacing * (from_x + 1) as f64;
-    let from_y = ctx.y_spacing * (from_y + 1) as f64;
-    let to_x = ctx.x_spacing * (to_x + 1) as f64;
-    let to_y = ctx.y_spacing * (to_y + 1) as f64;
+    let from_x = ctx.x_spacing() * (from_x + 1) as f64;
+    let from_y = ctx.y_spacing() * (from_y + 1) as f64;
+    let to_x = ctx.x_spacing() * (to_x + 1) as f64;
+    let to_y = ctx.y_spacing() * (to_y + 1) as f64;
 
     ret.push(line_![
         attrs! {At::X1 => from_x, At::Y1 => from_y, At::X2 => to_x, At::Y2 => to_y, At::Stroke => "black", At::StrokeWidth => 20}
@@ -271,8 +302,8 @@ fn gen_circles(ctx: &DrawContext) -> Vec<Node<Msg>> {
 
     for i in 0..ctx.grid_height {
         for j in 0..ctx.grid_width {
-            let x_offset = ctx.x_spacing * (j as f64 + 1_f64);
-            let y_offset = ctx.y_spacing * (i as f64 + 1_f64);
+            let x_offset = ctx.x_spacing() * (j as f64 + 1_f64);
+            let y_offset = ctx.y_spacing() * (i as f64 + 1_f64);
 
             ret.push(circle![
                 attrs! {At::Cx => x_offset, At::Cy => y_offset, At::R => 10}

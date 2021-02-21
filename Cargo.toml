@@ -11,5 +11,5 @@ rand = "0.8.3"
 
 [dependencies.web-sys]
 version = "0.3.47"
-features = ["XmlSerializer", "Blob", "BlobPropertyBag", "Element", "Document", "Event"]
+features = ["XmlSerializer", "Blob", "BlobPropertyBag", "Element", "Document", "Event", "EventTarget"]
 
