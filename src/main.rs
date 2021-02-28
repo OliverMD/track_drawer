@@ -164,121 +164,150 @@ fn button_class() -> Attrs {
 
 fn view(model: &Model) -> Node<Msg> {
     div![
-        C!["h-screen flex flex-row"],
+        C!["h-screen flex flex-col"],
+        navbar_view(model),
         div![
-            C!["w-1/4 bg-gray-100 h-full overflow-auto flex flex-col items-center pt-8 divide-y-2 px-2"],
-            div![
-                C!["flex justify-center p-2 m-2"],
-                label![
-                    C!["flex items-center"],
-                    "Show points",
-                    input![
-                        C!["form-checkbox ml-2"],
-                        attrs! {
-                        At::Id => "show-points",
-                        At::Type => "checkbox",
-                        At::Checked => model.show_points.as_at_value()
-                        },
-                        ev(Ev::Click, |_| Msg::ToggleShowPoints)
-                    ]
-                ]
-            ],
-            div![
-                C!["items-center flex flex-col w-full py-2"],
-                button![
-                    "Next Line",
-                    button_class(),
-                    ev(Ev::Click, |_| Msg::NextRandomLine)
-                ],
-                button![
-                    "Confirm Line",
-                    button_class(),
-                    attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
-                    ev(Ev::Click, |_| Msg::AddLine),
-                ],
-                button![
-                    "Next Row",
-                    button_class(),
-                    attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
-                    ev(Ev::Click, |_| Msg::NextRow),
-                ],
-                button![
-                    "Clear All",
-                    button_class(),
-                    ev(Ev::Click, |_| Msg::Clear)
-                ],
-            ],
-            div![
-            C!["py-2"],
-                div![
-                    C!["m-3 p-2 rounded-md bg-blue-100 bg-opacity-50 font-sans text-center text-gray-500 shadow"],
-                    "Keyboard Shortcuts",
-                    dl![
-                        C!["grid grid-cols-2 gap-2 text-sm my-3 font-light"],
-                        dt!["r"],
-                        dd!["Random line"],
-                        dt!["n"],
-                        dd!["New row"],
-                        dt!["Enter"],
-                        dd!["Adds the last random line"],
-                        dt!["0..9"],
-                        dd!["Random line from numbered point"]
-                    ]
-                ]
-            ],
-            div![
-                C!["p-2 w-full flex flex-col items-center my-2"],
-                label![
-                    C!["text-left mb-1 w-full"],
-                    "Grid width:"
-                ],
+            C!["flex flex-grow flex-row w-screen"],
+            sidebar_view(model),
+            svg_view(model)
+        ]
+    ]
+}
+
+fn navbar_view(model: &Model) -> Node<Msg> {
+    nav![
+        C!["w-screen h-12 bg-gray-300 pl-8 flex flex-row space-x-4"],
+        div![
+            C!["h-full justify-center items-center flex px-2 shadow-md bg-gray-100"],
+            span![C!["text-center tracking-wider"], "Draw"]
+        ],
+        div![
+            C!["h-full justify-center items-center flex px-2"],
+            span![C!["text-center tracking-wider"], "View"]
+        ]
+    ]
+}
+
+fn sidebar_view(model: &Model) -> Node<Msg> {
+    div![
+        C!["w-1/4 bg-gray-100 overflow-auto flex-grow-0 flex flex-col items-center pt-8 divide-y-2 px-2"],
+        div![
+            C!["flex justify-center p-2 m-2"],
+            label![
+                C!["flex items-center"],
+                "Show points",
                 input![
-                    C!["w-full"],
-                    attrs!{
-                    At::Type => "range",
-                    At::Min => 1,
-                    At::Max => 8,
-                    At::Step => 1,
-                    At::Value => model.x_limits.1
+                    C!["form-checkbox ml-2"],
+                    attrs! {
+                    At::Id => "show-points",
+                    At::Type => "checkbox",
+                    At::Checked => model.show_points.as_at_value()
                     },
-                    ev(Ev::Change, |change| {
-                        let input_elem: HtmlInputElement = change.target().unwrap().dyn_into().unwrap();
-                        Msg::ChangeNumCols(input_elem.value().parse().unwrap())
-                    })
-                ],
-                div![
-                    C!["flex justify-between mt-2 text-xs text-gray-600 w-full px-1"],
-                    span![C!["text-left"], format!("{}", 1)],
-                    (2..8)
-                        .into_iter()
-                        .map(|i| span![C!["text-center left-2"], format!("{}", i)]),
-                    span![C!["text-right"], format!("{}", 8)]
+                    ev(Ev::Click, |_| Msg::ToggleShowPoints)
                 ]
-            ],
-            div![
-                C!["pt-2 items-center flex flex-col w-full"],
-                button!["Download", button_class(), ev(Ev::Click, |_| Msg::Download)]
             ]
         ],
         div![
-            C!["w-3/4 h-full flex justify-center"],
-            svg![
-                C!["h-full block"],
-                el_ref(&model.svg_ref),
-                attrs! {
-                    At::ViewBox => format!("0 0 {} {}", model.draw_context.view_width, model.draw_context.view_height),
-                    At::PreserveAspectRatio => "xMidYMid meet",
-                },
-                IF!(model.show_points => gen_circles(&model.draw_context)),
-                model
-                    .lines
-                    .iter()
-                    .map(|coords| draw_line(*coords, &model.draw_context)),
-                model
-                    .next_line
-                    .map(|line| draw_line(line, &model.draw_context))
+            C!["items-center flex flex-col w-full py-2"],
+            button![
+                "Next Line",
+                button_class(),
+                ev(Ev::Click, |_| Msg::NextRandomLine)
+            ],
+            button![
+                "Confirm Line",
+                button_class(),
+                attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
+                ev(Ev::Click, |_| Msg::AddLine),
+            ],
+            button![
+                "Next Row",
+                button_class(),
+                attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
+                ev(Ev::Click, |_| Msg::NextRow),
+            ],
+            button![
+                "Clear All",
+                button_class(),
+                ev(Ev::Click, |_| Msg::Clear)
+            ],
+        ],
+        div![
+        C!["py-2"],
+            div![
+                C!["m-3 p-2 rounded-md bg-blue-100 bg-opacity-50 font-sans text-center text-gray-500 shadow"],
+                "Keyboard Shortcuts",
+                dl![
+                    C!["grid grid-cols-2 gap-2 text-sm my-3 font-light"],
+                    dt!["r"],
+                    dd!["Random line"],
+                    dt!["n"],
+                    dd!["New row"],
+                    dt!["Enter"],
+                    dd!["Adds the last random line"],
+                    dt!["0..9"],
+                    dd!["Random line from numbered point"]
+                ]
             ]
         ],
+        div![
+            C!["p-2 w-full flex flex-col items-center my-2"],
+            label![
+                C!["text-left mb-1 w-full"],
+                "Grid width:"
+            ],
+            input![
+                C!["w-full"],
+                attrs!{
+                At::Type => "range",
+                At::Min => 1,
+                At::Max => 8,
+                At::Step => 1,
+                At::Value => model.x_limits.1
+                },
+                ev(Ev::Change, |change| {
+                    let input_elem: HtmlInputElement = change.target().unwrap().dyn_into().unwrap();
+                    Msg::ChangeNumCols(input_elem.value().parse().unwrap())
+                })
+            ],
+            div![
+                C!["flex justify-between mt-2 text-xs text-gray-600 w-full px-1"],
+                span![C!["text-left"], format!("{}", 1)],
+                (2..8)
+                    .into_iter()
+                    .map(|i| span![C!["text-center left-2"], format!("{}", i)]),
+                span![C!["text-right"], format!("{}", 8)]
+            ]
+        ],
+        div![
+            C!["pt-2 items-center flex flex-col w-full"],
+            button!["Download", button_class(), ev(Ev::Click, |_| Msg::Download)]
+        ]
+    ]
+}
+
+fn svg_view(model: &Model) -> Node<Msg> {
+    div![
+        C!["w-3/4 flex flex-grow justify-center w-full"],
+        style! {
+            St::Height => "96vh"
+        },
+        svg![
+            C!["w-full h-full"],
+            el_ref(&model.svg_ref),
+            attrs! {
+                At::ViewBox => format!("0 0 {} {}", model.draw_context.view_width, model.draw_context.view_height),
+                At::PreserveAspectRatio => "xMidYMid meet",
+            },
+            IF!(model.show_points => gen_circles(&model.draw_context)),
+            model
+                .lines
+                .iter()
+                .map(|coords| draw_line(*coords, &model.draw_context)),
+            model
+                .next_line
+                .map(|line| draw_line(line, &model.draw_context))
+        ]
     ]
 }
 
