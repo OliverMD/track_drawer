@@ -156,10 +156,15 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
     }
 }
 
-fn button_class() -> Attrs {
+fn button_class(disabled: bool) -> Attrs {
     C![
-        "py-2 px-4 w-1/2 bg-blue-500 text-white font-semibold rounded-md shadow-md hover:bg-blue-700",
-        "focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 m-2"
+        "py-2 px-4 w-1/2 bg-blue-500 text-white font-semibold rounded-md shadow-md",
+        "focus:outline-none focus:ring-4 focus:ring-indigo-400 focus:ring-opacity-75 m-2",
+        if disabled {
+            "opacity-50 cursor-default"
+        } else {
+            "hover:bg-blue-700"
+        }
     ]
 }
 
@@ -194,24 +199,24 @@ fn sidebar_view(model: &Model) -> Node<Msg> {
             C!["items-center flex flex-col w-full py-2"],
             button![
                 "Next Line",
-                button_class(),
+                button_class(false),
                 ev(Ev::Click, |_| Msg::NextRandomLine)
             ],
             button![
                 "Confirm Line",
-                button_class(),
+                button_class(model.next_line.is_none()),
                 attrs! {At::Disabled => model.next_line.is_none().as_at_value()},
                 ev(Ev::Click, |_| Msg::AddLine),
             ],
             button![
                 "Next Row",
-                button_class(),
+                button_class(model.next_line.is_some()),
                 attrs! {At::Disabled => model.next_line.is_some().as_at_value()},
                 ev(Ev::Click, |_| Msg::NextRow),
             ],
             button![
                 "Clear All",
-                button_class(),
+                button_class(false),
                 ev(Ev::Click, |_| Msg::Clear)
             ],
         ],
@@ -264,7 +269,7 @@ fn sidebar_view(model: &Model) -> Node<Msg> {
         ],
         div![
             C!["pt-2 items-center flex flex-col w-full"],
-            button!["Download", button_class(), ev(Ev::Click, |_| Msg::Download)]
+            button!["Download", button_class(false), ev(Ev::Click, |_| Msg::Download)]
         ]
     ]
 }
