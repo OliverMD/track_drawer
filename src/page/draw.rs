@@ -1,3 +1,4 @@
+use crate::drawing::Drawing;
 use crate::page::draw::Msg::LineFrom;
 use js_sys::Array;
 use rand::Rng;
@@ -35,12 +36,10 @@ impl DrawContext {
 }
 
 pub struct Model {
-    draw_context: DrawContext,
-    lines: Vec<((i16, i16), (i16, i16))>,
-    show_points: bool,
     x_limits: (i16, i16),
     y_limits: (i16, i16),
     next_line: Option<((i16, i16), (i16, i16))>,
+    drawing: Drawing,
 
     svg_ref: ElRef<web_sys::HtmlElement>,
 }
@@ -74,12 +73,10 @@ pub fn init(orders: &mut impl Orders<Msg>) -> Model {
         }
     }));
     Model {
-        draw_context: DrawContext::new(1000_f64, 2000_f64, 4, 2),
-        lines: vec![],
-        show_points: true,
         x_limits: (0, 4),
         y_limits: (0, 2),
         next_line: None,
+        drawing: Drawing::new(),
         svg_ref: ElRef::new(),
     }
 }
@@ -87,7 +84,7 @@ pub fn init(orders: &mut impl Orders<Msg>) -> Model {
 pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
     let mut rng = rand::thread_rng();
     match msg {
-        Msg::ToggleShowPoints => model.show_points = !model.show_points,
+        Msg::ToggleShowPoints => model.drawing.toggle_include_points(),
         Msg::NextRandomLine => {
             model.next_line = Some((
                 (
@@ -101,17 +98,17 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
             ))
         }
         Msg::AddLine => {
-            if let Some(line) = model.next_line {
-                model.lines.push(line);
+            if let Some((from, to)) = model.next_line {
+                model.drawing.add_line(from, to);
                 model.next_line = None;
             }
         }
         Msg::NextRow => {
-            model.draw_context.grid_height += 1;
+            model.drawing.grid_height += 1;
             model.y_limits = (model.y_limits.0 + 1, model.y_limits.1 + 1);
         }
         Msg::LineFrom(x) => {
-            if x <= model.draw_context.grid_width {
+            if x <= model.drawing.grid_width {
                 model.next_line = Some((
                     ((x as i16) - 1, model.y_limits.0),
                     (
@@ -147,11 +144,11 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
             document.body().unwrap().remove_child(&elem).unwrap();
         }
         Msg::ChangeNumCols(x) => {
-            model.draw_context.grid_width = x;
+            model.drawing.grid_width = x;
             model.x_limits = (0, x as i16);
         }
         Msg::Clear => {
-            model.lines.clear();
+            model.drawing = Drawing::new();
         }
     }
 }
@@ -189,7 +186,7 @@ fn sidebar_view(model: &Model) -> Node<Msg> {
                     attrs! {
                     At::Id => "show-points",
                     At::Type => "checkbox",
-                    At::Checked => model.show_points.as_at_value()
+                    At::Checked => model.drawing.includes_points.as_at_value()
                     },
                     ev(Ev::Click, |_| Msg::ToggleShowPoints)
                 ]
@@ -284,31 +281,30 @@ fn svg_view(model: &Model) -> Node<Msg> {
             C!["w-full h-full"],
             el_ref(&model.svg_ref),
             attrs! {
-                At::ViewBox => format!("0 0 {} {}", model.draw_context.view_width, model.draw_context.view_height),
+                At::ViewBox => format!("0 0 {} {}", model.drawing.view_width, model.drawing.view_height),
                 At::PreserveAspectRatio => "xMidYMid meet",
             },
-            IF!(model.show_points => gen_circles(&model.draw_context)),
-            model
-                .lines
-                .iter()
-                .map(|coords| draw_line(*coords, &model.draw_context)),
-            model
-                .next_line
-                .map(|line| draw_line(line, &model.draw_context))
+            model.drawing.draw(),
+            model.next_line.map(|line| draw_line(
+                line,
+                model.drawing.x_spacing(),
+                model.drawing.y_spacing()
+            ))
         ]
     ]
 }
 
 fn draw_line(
     ((from_x, from_y), (to_x, to_y)): ((i16, i16), (i16, i16)),
-    ctx: &DrawContext,
+    x_spacing: f64,
+    y_spacing: f64,
 ) -> Vec<Node<Msg>> {
     let mut ret = Vec::new();
 
-    let from_x = ctx.x_spacing() * (from_x + 1) as f64;
-    let from_y = ctx.y_spacing() * (from_y + 1) as f64;
-    let to_x = ctx.x_spacing() * (to_x + 1) as f64;
-    let to_y = ctx.y_spacing() * (to_y + 1) as f64;
+    let from_x = x_spacing * (from_x + 1) as f64;
+    let from_y = y_spacing * (from_y + 1) as f64;
+    let to_x = x_spacing * (to_x + 1) as f64;
+    let to_y = y_spacing * (to_y + 1) as f64;
 
     ret.push(line_![
         attrs! {At::X1 => from_x, At::Y1 => from_y, At::X2 => to_x, At::Y2 => to_y, At::Stroke => "black", At::StrokeWidth => 20}
@@ -319,23 +315,6 @@ fn draw_line(
     ret.push(circle![
         attrs! {At::Cx => to_x, At::Cy => to_y, At::R => 10}
     ]);
-
-    ret
-}
-
-fn gen_circles(ctx: &DrawContext) -> Vec<Node<Msg>> {
-    let mut ret = Vec::new();
-
-    for i in 0..ctx.grid_height {
-        for j in 0..ctx.grid_width {
-            let x_offset = ctx.x_spacing() * (j as f64 + 1_f64);
-            let y_offset = ctx.y_spacing() * (i as f64 + 1_f64);
-
-            ret.push(circle![
-                attrs! {At::Cx => x_offset, At::Cy => y_offset, At::R => 10}
-            ])
-        }
-    }
 
     ret
 }

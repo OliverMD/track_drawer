@@ -683,6 +683,7 @@ version = "0.1.0"
 dependencies = [
  "rand 0.8.3",
  "seed",
+ "serde",
  "wasm-bindgen",
  "web-sys",
 ]

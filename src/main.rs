@@ -1,6 +1,8 @@
 use seed::{prelude::*, *};
 
+mod drawing;
 mod page;
+mod storage;
 
 const DRAW: &str = "draw";
 const VIEW: &str = "view";
