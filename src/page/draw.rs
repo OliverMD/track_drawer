@@ -175,7 +175,7 @@ pub fn view(model: &Model) -> Node<Msg> {
 
 fn sidebar_view(model: &Model) -> Node<Msg> {
     div![
-        C!["w-1/4 bg-gray-100 overflow-auto flex-grow-0 flex flex-col items-center pt-8 divide-y-2 px-2"],
+        C!["w-1/5 bg-gray-100 overflow-auto flex-grow-0 flex flex-col items-center pt-8 divide-y-2 px-2 shadow-md"],
         div![
             C!["flex justify-center p-2 m-2"],
             label![

@@ -100,14 +100,17 @@ fn view(model: &Model) -> Node<Msg> {
 }
 
 fn navbar_view(model: &Model) -> Node<Msg> {
+    const SELECTED_CLASSES: &str = "shadow-md bg-red-800 text-white";
+    const UNSELECTED_CLASSES: &str = "hover:bg-red-600 hover:text-white";
+
     nav![
-        C!["w-screen h-12 bg-gray-300 pl-8 flex flex-row space-x-4"],
+        C!["w-screen h-12 bg-gray-200 pl-8 flex flex-row space-x-4 border-b-4 border-red-400 shadow-md"],
         a![
             C!["h-full justify-center items-center flex px-2"],
             if matches!(model.page, Page::Draw(_)) {
-                C!["shadow-md bg-gray-100"]
+                C![SELECTED_CLASSES]
             } else {
-                C!["hover:bg-gray-200"]
+                C![UNSELECTED_CLASSES]
             },
             attrs! {
                 At::Href => Urls::new(&model.base_url).draw(),
@@ -119,9 +122,9 @@ fn navbar_view(model: &Model) -> Node<Msg> {
         a![
             C!["h-full justify-center items-center flex px-2"],
             if matches!(model.page, Page::View(_)) {
-                C!["shadow-md bg-gray-100"]
+                C![SELECTED_CLASSES]
             } else {
-                C!["hover:bg-gray-200"]
+                C![UNSELECTED_CLASSES]
             },
             attrs! {
                 At::Href => Urls::new(&model.base_url).view(),
