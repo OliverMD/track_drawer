@@ -1,5 +1,6 @@
 use crate::drawing::Drawing;
 use crate::page::draw::Msg::LineFrom;
+use crate::storage::STORAGE_KEY;
 use js_sys::Array;
 use rand::Rng;
 use seed::Attrs;
@@ -53,6 +54,7 @@ pub enum Msg {
     Download,
     ChangeNumCols(u16),
     Clear,
+    Save,
 }
 
 pub fn init(orders: &mut impl Orders<Msg>) -> Model {
@@ -149,6 +151,13 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
         }
         Msg::Clear => {
             model.drawing = Drawing::new();
+        }
+        Msg::Save => {
+            let mut saved_drawings: Vec<Drawing> =
+                LocalStorage::get(STORAGE_KEY).unwrap_or(Vec::new());
+            saved_drawings.push(std::mem::replace(&mut model.drawing, Drawing::new()));
+            model.next_line = None;
+            LocalStorage::insert(STORAGE_KEY, &saved_drawings).expect("Saving drawing failed")
         }
     }
 }
@@ -266,6 +275,7 @@ fn sidebar_view(model: &Model) -> Node<Msg> {
         ],
         div![
             C!["pt-2 items-center flex flex-col w-full"],
+            button!["Save", button_class(false), ev(Ev::Click, |_| Msg::Save)],
             button!["Download", button_class(false), ev(Ev::Click, |_| Msg::Download)]
         ]
     ]

@@ -59,11 +59,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             }
         }
         Msg::UrlChanged(subs::UrlChanged(mut url)) => {
-            log!(url);
             let new_page = match url.next_path_part() {
                 Some(VIEW) => {
                     if !matches!(model.page, Page::View(_)) {
-                        log!("View");
                         Some(Page::View(page::view::init(
                             &mut orders.proxy(Msg::ViewMsg),
                         )))
@@ -73,7 +71,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 }
                 Some(DRAW) => {
                     if !matches!(model.page, Page::Draw(_)) {
-                        log!("Draw");
                         Some(Page::Draw(page::draw::init(
                             &mut orders.proxy(Msg::DrawMsg),
                         )))
