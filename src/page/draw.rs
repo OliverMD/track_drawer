@@ -7,8 +7,6 @@ use seed::Attrs;
 use seed::{prelude::*, *};
 use web_sys::{Blob, BlobPropertyBag, HtmlInputElement, XmlSerializer};
 
-const ENTER_KEY: &str = "Enter";
-
 struct DrawContext {
     grid_width: u16,
     grid_height: u16,
@@ -37,12 +35,12 @@ impl DrawContext {
 }
 
 pub struct Model {
-    x_limits: (i16, i16),
     y_limits: (i16, i16),
     next_line: Option<((i16, i16), (i16, i16))>,
     drawing: Drawing,
 
     svg_ref: ElRef<web_sys::HtmlElement>,
+    input_handle: StreamHandle, // Make sure we drop our stream when the user leave this page
 }
 
 pub enum Msg {
@@ -58,9 +56,9 @@ pub enum Msg {
 }
 
 pub fn init(orders: &mut impl Orders<Msg>) -> Model {
-    orders.stream(streams::window_event(Ev::KeyDown, |ev| {
+    let input_handle = orders.stream_with_handle(streams::window_event(Ev::KeyDown, |ev| {
         let ev: web_sys::KeyboardEvent = ev.unchecked_into();
-        if ev.key() == ENTER_KEY {
+        if ev.key() == "c" {
             Some(Msg::AddLine)
         } else if ev.key() == "r" {
             Some(Msg::NextRandomLine)
@@ -75,11 +73,11 @@ pub fn init(orders: &mut impl Orders<Msg>) -> Model {
         }
     }));
     Model {
-        x_limits: (0, 4),
         y_limits: (0, 2),
         next_line: None,
         drawing: Drawing::new(),
         svg_ref: ElRef::new(),
+        input_handle,
     }
 }
 
@@ -88,13 +86,14 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::ToggleShowPoints => model.drawing.toggle_include_points(),
         Msg::NextRandomLine => {
+            let x_limits = (0 as i16, model.drawing.grid_width as i16);
             model.next_line = Some((
                 (
-                    rng.gen_range(model.x_limits.0..model.x_limits.1),
+                    rng.gen_range(x_limits.0..x_limits.1),
                     rng.gen_range(model.y_limits.0..model.y_limits.1),
                 ),
                 (
-                    rng.gen_range(model.x_limits.0..model.x_limits.1),
+                    rng.gen_range(x_limits.0..x_limits.1),
                     rng.gen_range(model.y_limits.0..model.y_limits.1),
                 ),
             ))
@@ -114,7 +113,7 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
                 model.next_line = Some((
                     ((x as i16) - 1, model.y_limits.0),
                     (
-                        rng.gen_range(model.x_limits.0..model.x_limits.1),
+                        rng.gen_range(0_i16..model.drawing.grid_width as i16),
                         rng.gen_range(model.y_limits.0..model.y_limits.1),
                     ),
                 ))
@@ -147,9 +146,9 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
         }
         Msg::ChangeNumCols(x) => {
             model.drawing.grid_width = x;
-            model.x_limits = (0, x as i16);
         }
         Msg::Clear => {
+            model.y_limits = (0, 2);
             model.drawing = Drawing::new();
         }
         Msg::Save => {
@@ -237,7 +236,7 @@ fn sidebar_view(model: &Model) -> Node<Msg> {
                     dd!["Random line"],
                     dt!["n"],
                     dd!["New row"],
-                    dt!["Enter"],
+                    dt!["c"],
                     dd!["Adds the last random line"],
                     dt!["0..9"],
                     dd!["Random line from numbered point"]
@@ -257,7 +256,7 @@ fn sidebar_view(model: &Model) -> Node<Msg> {
                 At::Min => 1,
                 At::Max => 8,
                 At::Step => 1,
-                At::Value => model.x_limits.1
+                At::Value => model.drawing.grid_width
                 },
                 ev(Ev::Change, |change| {
                     let input_elem: HtmlInputElement = change.target().unwrap().dyn_into().unwrap();
