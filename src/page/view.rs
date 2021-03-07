@@ -9,6 +9,7 @@ pub struct Model {
 
 pub enum Msg {
     Download(usize),
+    Delete(usize),
 }
 
 pub fn init(_orders: &mut impl Orders<Msg>) -> Model {
@@ -25,6 +26,9 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
             if let Some((_, el_ref)) = model.drawings.get(idx) {
                 utils::download_svg(el_ref);
             }
+        }
+        Msg::Delete(idx) => {
+            model.drawings.remove(idx);
         }
     }
 }
@@ -58,11 +62,21 @@ fn render_drawing(
             },
             drawing.draw(),
         ],
-        button![
-            C!["w-12 stroke-current text-blue-300 absolute bottom-0 right-0 opacity-50 hover:opacity-100",
-            "focus:outline-none m-2"],
-            icons::download(),
-            ev(Ev::Click, move |_| Msg::Download(idx))
+        div![
+            C!["absolute bottom-0 right-0"],
+            button![
+                C![
+                    "w-12 stroke-current text-blue-500 opacity-25 hover:opacity-100",
+                    "focus:outline-none"
+                ],
+                icons::download(),
+                ev(Ev::Click, move |_| Msg::Download(idx))
+            ],
+            button![
+                C!["w-12 stroke-current text-red-500 opacity-25 hover:opacity-100 focus:outline-none"],
+                icons::remove(),
+                ev(Ev::Click, move |_| Msg::Delete(idx))
+            ]
         ]
     ]
 }
