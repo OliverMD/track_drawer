@@ -1,8 +1,10 @@
 use seed::{prelude::*, *};
 
 mod drawing;
+mod icons;
 mod page;
 mod storage;
+mod utils;
 
 const DRAW: &str = "draw";
 const VIEW: &str = "view";

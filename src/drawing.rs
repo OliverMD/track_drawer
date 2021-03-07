@@ -1,4 +1,3 @@
-use seed::Attrs;
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 

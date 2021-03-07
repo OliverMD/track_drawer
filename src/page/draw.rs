@@ -1,38 +1,12 @@
-use crate::drawing::Drawing;
-use crate::page::draw::Msg::LineFrom;
-use crate::storage::STORAGE_KEY;
-use js_sys::Array;
 use rand::Rng;
 use seed::Attrs;
 use seed::{prelude::*, *};
-use web_sys::{Blob, BlobPropertyBag, HtmlInputElement, XmlSerializer};
+use web_sys::HtmlInputElement;
 
-struct DrawContext {
-    grid_width: u16,
-    grid_height: u16,
-
-    view_width: f64,
-    view_height: f64,
-}
-
-impl DrawContext {
-    fn new(width: f64, height: f64, grid_width: u16, grid_height: u16) -> DrawContext {
-        DrawContext {
-            view_width: width,
-            view_height: height,
-            grid_width,
-            grid_height,
-        }
-    }
-
-    fn x_spacing(&self) -> f64 {
-        self.view_width / (self.grid_width + 1) as f64
-    }
-
-    fn y_spacing(&self) -> f64 {
-        self.view_width / (self.grid_width + 1) as f64
-    }
-}
+use crate::drawing::Drawing;
+use crate::page::draw::Msg::LineFrom;
+use crate::storage::STORAGE_KEY;
+use crate::utils;
 
 pub struct Model {
     y_limits: (i16, i16),
@@ -40,6 +14,8 @@ pub struct Model {
     drawing: Drawing,
 
     svg_ref: ElRef<web_sys::HtmlElement>,
+
+    #[allow(dead_code)]
     input_handle: StreamHandle, // Make sure we drop our stream when the user leave this page
 }
 
@@ -120,29 +96,7 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
             }
         }
         Msg::Download => {
-            let svg_buf = XmlSerializer::new()
-                .unwrap()
-                .serialize_to_string(&model.svg_ref.shared_node_ws.clone_inner().unwrap())
-                .unwrap();
-
-            let mut blob_type = BlobPropertyBag::new();
-            blob_type.type_("image/svg+xml;charset=utf-8");
-
-            let arr = Array::new_with_length(1);
-            arr.set(0, JsValue::from_str(&svg_buf));
-
-            let blob =
-                Blob::new_with_str_sequence_and_options(&JsValue::from(arr), &blob_type).unwrap();
-            let url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
-            let document = web_sys::window().unwrap().document().unwrap();
-            let elem = document.create_element("a").unwrap();
-            elem.set_attribute("href", &url).unwrap();
-            elem.set_attribute("download", "Track Image").unwrap();
-            let event = document.create_event("MouseEvents").unwrap();
-            event.init_event("click");
-            document.body().unwrap().append_with_node_1(&elem).unwrap();
-            elem.dispatch_event(&event).unwrap();
-            document.body().unwrap().remove_child(&elem).unwrap();
+            utils::download_svg(&model.svg_ref);
         }
         Msg::ChangeNumCols(x) => {
             model.drawing.grid_width = x;
