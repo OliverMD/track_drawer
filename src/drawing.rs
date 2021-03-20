@@ -1,7 +1,7 @@
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Drawing {
     pub grid_width: u16,
     pub grid_height: u16,

@@ -14,6 +14,7 @@ pub enum Msg {
     Delete(usize),
     Select(usize),
     UnSelect,
+    TogglePoints(usize),
 }
 
 pub fn init(_orders: &mut impl Orders<Msg>) -> Model {
@@ -40,6 +41,14 @@ pub fn update(msg: Msg, model: &mut Model, _orders: &mut impl Orders<Msg>) {
         }
         Msg::UnSelect => {
             model.selected = None;
+        }
+        Msg::TogglePoints(idx) => {
+            if let Some((drawing, _)) = model.drawings.get_mut(idx) {
+                drawing.includes_points = !drawing.includes_points;
+                let drawings: Vec<Drawing> =
+                    model.drawings.iter().map(|(d, _)| (*d).clone()).collect();
+                LocalStorage::insert(STORAGE_KEY, &drawings).unwrap();
+            }
         }
     }
 }
@@ -72,10 +81,29 @@ pub fn drawing_view(model: &Model) -> Node<Msg> {
 
 fn sidebar_view(model: &Model) -> Option<Node<Msg>> {
     if let Some(idx) = model.selected {
-        if let Some(drawing) = model.drawings.get(idx) {
-            Some(div![C![
-                "w-1/5 h-full bg-gray-100 flex flex-col flex-grow-0 overflow-auto"
-            ]])
+        if let Some((drawing, _ref)) = model.drawings.get(idx) {
+            Some(div![
+                C!["w-1/5 h-full bg-gray-100 flex flex-col flex-grow-0 overflow-auto"],
+                div![
+                    C!["flex justify-center p-2 m-2"],
+                    label![
+                        C!["flex items-center"],
+                        "Show points",
+                        input![
+                            C!["form-checkbox ml-2"],
+                            attrs! {
+                            At::Id => "show-points",
+                            At::Type => "checkbox",
+                            At::Checked => drawing.includes_points.as_at_value()
+                            },
+                            ev(Ev::Click, move |e| {
+                                e.stop_propagation();
+                                Msg::TogglePoints(idx)
+                            })
+                        ]
+                    ]
+                ],
+            ])
         } else {
             None
         }
