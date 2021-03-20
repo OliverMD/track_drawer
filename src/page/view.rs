@@ -69,7 +69,7 @@ pub fn drawing_view(model: &Model) -> Node<Msg> {
     div![
         C!["m-16 justify-center flex w-full"],
         div![
-            C!["w-1/2 flex space-x-8 justify-center flex-wrap"],
+            C!["grid gap-8 grid-flow-row grid-cols-3"],
             model
                 .drawings
                 .iter()
@@ -128,7 +128,7 @@ fn render_drawing(
     };
 
     div![
-        C!["rounded shadow-lg mt-8 relative h-96"],
+        C!["rounded shadow-lg relative h-96"],
         selected_attrs,
         svg![
             C!["h-96"],
